@@ -195,7 +195,6 @@ function App() {
 				)}
 				<Register setPage={setPage} setUser={setUser}
 					addErrNotification={addErrNotification} />
-				<button onClick={() => addErrNotification('1')}>hfirhigr</button >
 			</>;
 		default:
 			// Placeholder
