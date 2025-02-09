@@ -118,9 +118,16 @@ function Register({ setPage, setUser, setUserType }) {
 	const [formPassword, setFormPassword] = useState('');
 	const [formDate, setFormDate] = useState('2005-01-01');
 	const [formPfp, setFormPfp] = useState();
+	const [formPfpBase64, setFormPfpBase64] = useState();
+	const [formButtonDisabled, setFormButtonDisabled] = useState(false);
 
 	async function registerCreateAccount(e) {
 		e.preventDefault();
+		if (!formUsername ||
+			!formPhone ||
+			!formEmail ||
+			!formPassword ||
+			!formPfpBase64) return;
 		createUserWithEmailAndPassword(firebaseAuth, formEmail, formPassword)
 			.then(async (userCredential) => {
 				const user = userCredential.user;
@@ -133,6 +140,7 @@ function Register({ setPage, setUser, setUserType }) {
 					email: formEmail,
 					date: formDate,
 					userType: 'student',
+					pfp: formPfpBase64,
 				});
 				setUser(user);
 				setUserType(UserType.student);
@@ -144,8 +152,27 @@ function Register({ setPage, setUser, setUserType }) {
 	}
 
 	async function pfpChange(e) {
-		setFormPfp(URL.createObjectURL(e.target.files[0]));
-		// TODO: upload pfp (Cloud Firestore as String???)
+		setFormButtonDisabled(true);
+		setFormPfp();
+		// TODO: placeholder image
+		// setFormPfp(idk some placeholder image);
+		const file = e.target.files[0];
+		const reader = new FileReader();
+		reader.readAsDataURL(file);
+		reader.onload = () => {
+			setFormButtonDisabled(false);
+			if (reader.result.length >= 1000000) {
+				// TODO: handle img too big error
+				console.log('Error: Imagen muy grande');
+				return;
+			}
+			setFormPfp(URL.createObjectURL(file));
+			setFormPfpBase64(reader.result);
+		};
+		reader.onerror = () => {
+			setFormButtonDisabled(false);
+			// TODO: handle file conversion error
+		};
 	}
 
 	// TODO: add loading animation
@@ -187,17 +214,22 @@ function Register({ setPage, setUser, setUserType }) {
 			</div>
 			<div className="register_form_section_pfp register_form_section">
 				<h3 className="register_form_text">Foto de Perfil</h3>
+				{/* si subes una img con error, aún aparece que la has subido
+				asumo que ocultaremos eso igual, pero por ahora está raro */}
 				<input type="file" id="register_pfp" name="register_pfp" onChange={pfpChange}
 					className="register_date register_field" required accept="image/*" />
 				<img id="register_pfp_preview" name="register_pfp_preview"
 					className="register_pfp_preview pfp_preview" src={formPfp} />
 			</div>
-			<button type="submit" className="register_submit_button button_1">Crear Cuenta</button>
+			<button type="submit" disabled={formButtonDisabled}
+				className="register_submit_button button_1">
+				Crear Cuenta
+			</button>
 		</form>
 		<h2 className="register_to_login">
 			¿Ya tienes cuenta?
-			<a onClick={() => setPage(Page.login)}> Inicia Sesión</a>
-		</h2>
+			<a className="selfLink" onClick={() => setPage(Page.login)}> Inicia Sesión</a>
+		</h2 >
 		<Footer />
 	</>;
 }
@@ -208,7 +240,7 @@ function App() {
 
 	// Cambiar página defecto
 	const [page, setPage] = useState(Page.login);
-	const [user, setUser] = useState(null);
+	const [user, setUser] = useState();
 	const [userType, setUserType] = useState();
 
 	// Para mostrar una página, solo hacemos un switch sobre todas
